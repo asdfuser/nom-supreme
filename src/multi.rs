@@ -2,7 +2,7 @@
 //! designed to try to provide more useful errors by being aware of a terminal
 //! condition.
 
-use std::convert::Infallible;
+use std::{collections::HashMap, convert::Infallible};
 
 use nom::{
     error::{append_error, ErrorKind::SeparatedNonEmptyList, FromExternalError, ParseError},
@@ -523,4 +523,19 @@ mod test_separated_terminated {
             ("", vec![1, 2, 3, 4]),
         )
     }
+}
+
+fn parse_object<I, K, V, E>(
+    key: impl Parser<I, K, E>,
+    value: impl Parser<I, V, E>,
+) -> impl Parser<I, HashMap<K, V>, E> {
+    parse_separated_terminated(
+        key.terminated(char(':').delimited(multispace0))
+            .and(value)
+            .terminated(multispace0),
+        char(',').terminated(multispace0),
+        char('}'),
+        init,
+        fold,
+    ).preceded(char('{').terminated(multispace0))
 }
